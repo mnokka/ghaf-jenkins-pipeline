@@ -105,12 +105,26 @@ pipeline {
               //sh 'nix build -L .#packages.riscv64-linux.microchip-icicle-kit-debug              -o result-microchip-icicle-kit-debug'
               //sh 'nix build -L .#packages.x86_64-linux.doc                                      -o result-doc'
               // TBD: fail stage if tool fails
-              sh 'nix run github:tiiuae/sbomnix#sbomnix .#packages.x86_64-linux.generic-x86_64-debug'
-              sh 'ls *sbom*'
-              sh 'ls -h'
+              //sh 'nix run github:tiiuae/sbomnix#sbomnix .#packages.x86_64-linux.generic-x86_64-debug'
+              
               script {
-                renameAnalyzeFiles("result-x86_64-linux.generic-x86_64-debug")     
+                def sbomnixResult = sh script: 'nix run github:tiiuae/sbomnix#sbomnix .#packages.x86_64-linux.generic-x86_64-debug', returnStatus: true
+                    if (sbomnixResult != 0) {
+                        currentBuild.result = 'UNSTABLE'
+                        echo "The sbomnix command failed. Setting build status to UNSTABLE."
+                    } else {
+                        echo "The sbomnix command succeeded. Carry on as normally"
+                        renameAnalyzeFiles("result-x86_64-linux.generic-x86_64-debug")  
+                    }
               }
+              
+              
+              
+              //sh 'ls *sbom*'
+              sh 'ls -h'
+             // script {
+             //   renameAnalyzeFiles("result-x86_64-linux.generic-x86_64-debug")     
+             // }
             }
           }
         }
