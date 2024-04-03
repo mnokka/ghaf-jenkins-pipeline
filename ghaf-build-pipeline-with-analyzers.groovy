@@ -108,13 +108,13 @@ pipeline {
               //sh 'nix run github:tiiuae/sbomnix#sbomnix .#packages.x86_64-linux.generic-x86_64-debug'
               
               script {
-                def sbomnixResult = sh script: 'nix run github:tiiuae/sbomnix#sbomnix .#packages.x86_64-linux.generic-x86_64-debug', returnStatus: true
+                def sbomnixResult = sh script: 'nix run github:tiiuae/sbomnix#sbomnix -- .#packages.x86_64-linux.generic-x86_64-debug --csv result-x86_64-linux.generic-x86_64-debug.csv --cdx result-x86_64-linux.generic-x86_64-debug.cdx.json --spdx result-x86_64-linux.generic-x86_64-debug.spdx.json  ', returnStatus: true
                     if (sbomnixResult != 0) {
                         currentBuild.result = 'UNSTABLE'
                         echo "The sbomnix command failed. Setting build status to UNSTABLE."
                     } else {
                         echo "The sbomnix command succeeded. Carry on as normally"
-                        renameAnalyzeFiles("result-x86_64-linux.generic-x86_64-debug")  
+                        //renameAnalyzeFiles("result-x86_64-linux.generic-x86_64-debug")  
                     }
               }
               
