@@ -25,7 +25,6 @@ properties([
 ////////////////////////////////////////////////////////////////////////////////
 // TBD: fail if no analyze files
 
-
 def renameAnalyzeFiles(String variantname) {
 
   def sourceDir = '.'
@@ -107,25 +106,60 @@ pipeline {
               // TBD: fail stage if tool fails
               //sh 'nix run github:tiiuae/sbomnix#sbomnix .#packages.x86_64-linux.generic-x86_64-debug'
               
+           
+              // Execute analyze tool (with 3 different outcomes) to generated image
+              // Use either SEQUENTIAL or PARALLEL script execution approach
+              // With this tool PARALLEL cause more end image loads per execution time           
               script {
+            
+                def MODE="SEQUENTIAL"
+                // def MODE="PARALLEL"
+                
+
+                if (MODE=="PARALLEL") {
+                  def commands =  [ 
+                  "cmd1": 'nix run github:tiiuae/sbomnix#sbomnix -- .#packages.x86_64-linux.generic-x86_64-debug --csv result-x86_64-linux.generic-x86_64-debug.csv',
+                  "cmd2": 'nix run github:tiiuae/sbomnix#sbomnix -- .#packages.x86_64-linux.generic-x86_64-debug --spdx result-x86_64-linux.generic-x86_64-debug.spdx.json',
+                  "cmd3": 'nix run github:tiiuae/sbomnix#sbomnix -- .#packages.x86_64-linux.generic-x86_64-debug --cdx result-x86_64-linux.generic-x86_64-debug.cdx.json'
+                  ]
+
+                def results = [:]
+
+                commands.each { commandName, command ->
+                   results[commandName] = {
+                        sh script: command, returnStatus: true
+                      }
+                }
+
+               parallel results
+
+                // echo in this context gets Jenkins go ballistic
+                results.each { commandName, result ->
+                   if (result != 0) {
+                          //echo ("Command $commandName failed with status $result")
+                          currentBuild.result = 'UNSTABLE'       
+                    } else {
+                        //echo ("Command $commandName succeeded")
+                   }
+                }
+              }
+
+              if (MODE=="SEQUENTIAL") {
                 def sbomnixResult = sh script: 'nix run github:tiiuae/sbomnix#sbomnix -- .#packages.x86_64-linux.generic-x86_64-debug --csv result-x86_64-linux.generic-x86_64-debug.csv --cdx result-x86_64-linux.generic-x86_64-debug.cdx.json --spdx result-x86_64-linux.generic-x86_64-debug.spdx.json  ', returnStatus: true
                     if (sbomnixResult != 0) {
-                        currentBuild.result = 'UNSTABLE'
-                        echo "The sbomnix command failed. Setting build status to UNSTABLE."
+                       currentBuild.result = 'UNSTABLE'
+                       echo "The sbomnix command failed. Setting build status to UNSTABLE."
                     } else {
                         echo "The sbomnix command succeeded. Carry on as normally"
                         //renameAnalyzeFiles("result-x86_64-linux.generic-x86_64-debug")  
                     }
+                }
               }
-              
-              
-              
-              //sh 'ls *sbom*'
-              sh 'ls -h'
+
              // script {
              //   renameAnalyzeFiles("result-x86_64-linux.generic-x86_64-debug")     
              // }
-            }
+           }
           }
         }
         stage('Build on aarch64') {
