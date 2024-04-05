@@ -109,7 +109,8 @@ pipeline {
            
               // Execute analyze tool (with 3 different outcomes) to generated image
               // Use either SEQUENTIAL or PARALLEL script execution approach
-              // With this tool PARALLEL cause more end image loads per execution time           
+              // With this tool PARALLEL cause more end image loads per execution time    
+              // due need to load data from nix store for each execution run      
               script {
             
                 def MODE="SEQUENTIAL"
